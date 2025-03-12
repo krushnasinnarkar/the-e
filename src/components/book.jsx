@@ -1,7 +1,10 @@
+import { Environment, OrbitControls } from "@react-three/drei";
+import { useAtom } from "jotai";
 import Page from "./page"
+import { pageAtom } from "./pageNumbers";
 
 function Book() {
-
+    const [page] = useAtom(pageAtom);
     return (
         <>
             <group>
@@ -10,9 +13,12 @@ function Book() {
                         key={index}
                         number={index}
                         position-x={index * 0.15}
+                        page={page}
                     />
                 ))}
             </group>
+            <OrbitControls />
+            <Environment preset="studio"></Environment>
             <directionalLight
                 position={[2, 5, 2]}
                 intensity={2.5}
