@@ -1,0 +1,69 @@
+/* Container styles replicating Tailwind's pointer-events-none, select-none, z-10, fixed, inset-0, flex, justify-between, flex-col */
+.page-numbers-main {
+    pointer-events: none;
+    user-select: none;
+    z-index: 10;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    justify-content: end;
+    flex-direction: column;
+}
+
+/* Wrapper to center the content (w-full, overflow-auto, pointer-events-auto, flex, justify-center) */
+.page-numbers-wrapper {
+    width: 100%;
+    overflow: auto;
+    pointer-events: auto;
+    display: flex;
+    justify-content: center;
+}
+
+/* Button container (overflow-auto, flex, items-center, gap-4, max-w-full, p-10) */
+.page-numbers-buttons {
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    /* gap-4 is roughly 1rem */
+    max-width: 100%;
+    padding: 2.5rem;
+    /* p-10 is 2.5rem */
+}
+
+/* Base button styles (border-transparent, transition-all, duration-300, px-4, py-3, rounded-full, text-lg, uppercase, shrink-0, border) */
+.page-numbers-button {
+    border: 1px solid transparent;
+    transition: all 300ms ease;
+    padding: 0.75rem 1rem;
+    /* py-3 (0.75rem) and px-4 (1rem) */
+    border-radius: 9999px;
+    /* rounded-full */
+    font-size: 1.125rem;
+    /* text-lg */
+    text-transform: uppercase;
+    flex-shrink: 0;
+    cursor: pointer;
+    background-color: transparent;
+    /* default background */
+}
+
+/* Button hover state (hover:border-white) */
+.page-numbers-button:hover {
+    border-color: white;
+}
+
+/* Active button state (bg-white/90, text-black) */
+.page-numbers-button.active {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: black;
+}
+
+/* Inactive button state (bg-black/30, text-white) */
+.page-numbers-button.inactive {
+    background-color: rgba(0, 0, 0, 0.3);
+    color: white;
+}

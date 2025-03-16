@@ -1,24 +1,60 @@
-import { Environment, OrbitControls } from "@react-three/drei";
+import { Environment, Float, OrbitControls } from "@react-three/drei";
 import { useAtom } from "jotai";
 import Page from "./page"
-import { pageAtom } from "./pageNumbers";
+import { pageAtom, pages } from "./pageNumbers";
+import { useEffect, useState } from "react";
 
 function Book() {
     const [page] = useAtom(pageAtom);
+    const [delayedPage, setDelayedPage] = useState(page);
+
+    useEffect(() => {
+        let timeout;
+        const goToPage = () => {
+            setDelayedPage((delayedPage) => {
+                if (page === delayedPage) {
+                    return delayedPage;
+                } else {
+                    timeout = setTimeout(
+                        () => {
+                            goToPage();
+                        },
+                        Math.abs(page - delayedPage) > 2 ? 50 : 150
+                    );
+                    if (page > delayedPage) {
+                        return delayedPage + 1;
+                    }
+                    if (page < delayedPage) {
+                        return delayedPage - 1;
+                    }
+                }
+            });
+        };
+        goToPage();
+        return () => {
+            clearTimeout(timeout);
+        };
+    }, [page]);
+
     return (
         <>
-            <group>
-                {Array.from({ length: 4 }).map((_, index) => (
+            <group
+                rotation-y={-Math.PI / 2}
+            >
+                {[...pages].map((pageData, index) => (
                     <Page
+                        // position-x={index * 0.15}
                         key={index}
                         number={index}
-                        position-x={index * 0.15}
-                        page={page}
+                        page={delayedPage}
+                        opened={delayedPage > index}
+                        bookClosed={delayedPage === 0 || delayedPage === pages.length}
+                        {...pageData}
                     />
                 ))}
             </group>
-            <OrbitControls />
-            <Environment preset="studio"></Environment>
+            {/* <OrbitControls /> */}
+            {/* <Environment preset="studio"></Environment> */}
             <directionalLight
                 position={[2, 5, 2]}
                 intensity={2.5}
