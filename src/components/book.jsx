@@ -41,19 +41,23 @@ function Book() {
             <group
                 rotation-y={-Math.PI / 2}
             >
-                {[...pages].map((pageData, index) => (
-                    <Page
-                        // position-x={index * 0.15}
-                        key={index}
-                        number={index}
-                        page={delayedPage}
-                        opened={delayedPage > index}
-                        bookClosed={delayedPage === 0 || delayedPage === pages.length}
-                        {...pageData}
-                    />
-                ))}
+                {[...pages].map((pageData, index) => {
+                    return (
+                        <Page
+                            // position-x={index * 0.15}
+                            key={index}
+                            number={index}
+                            page={delayedPage}
+                            opened={delayedPage > index}
+                            bookClosed={delayedPage === 0 || delayedPage === pages.length}
+                            isActive={index === delayedPage || index === delayedPage - 1}
+                            {...pageData}
+                        />
+                    )
+                }
+                )}
             </group>
-            {/* <OrbitControls /> */}
+            <OrbitControls />
             {/* <Environment preset="studio"></Environment> */}
             <directionalLight
                 position={[2, 5, 2]}

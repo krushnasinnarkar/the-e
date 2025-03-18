@@ -1,8 +1,8 @@
 import { Html, useHelper } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { easing } from "maath";
-import { useMemo, useRef } from "react";
-import { Bone, BoxGeometry, Color, Float32BufferAttribute, MeshStandardMaterial, Skeleton, SkeletonHelper, SkinnedMesh, SRGBColorSpace, Uint16BufferAttribute, Vector3 } from "three";
+import { useMemo, useRef, useState } from "react";
+import { Bone, BoxGeometry, Color, Float32BufferAttribute, MeshStandardMaterial, Quaternion, Skeleton, SkeletonHelper, SkinnedMesh, SRGBColorSpace, Uint16BufferAttribute, Vector3, Euler } from "three";
 import { degToRad, MathUtils } from "three/src/math/MathUtils.js";
 
 const lerpFactor = 0.05;
@@ -14,7 +14,7 @@ const outsideCurveStrength = 0.05;
 const turningCurveStrength = 0.09;
 
 const PAGE_WIDTH = 1.28;
-const PAGE_HEIGHT = 1.71; // 4:3 aspect ratio
+const PAGE_HEIGHT = 1.71;
 const PAGE_DEPTH = 0.003;
 const PAGE_SEGMENTS = 30;
 const SEGMENT_WIDTH = PAGE_WIDTH / PAGE_SEGMENTS;
@@ -35,15 +35,12 @@ const skinIndexes = [];
 const skinWeights = [];
 
 for (let i = 0; i < position.count; i++) {
-    // ALL VERTICES
-    vertex.fromBufferAttribute(position, i); // get the vertex
-    const x = vertex.x; // get the x position of the vertex
-
-    const skinIndex = Math.max(0, Math.floor(x / SEGMENT_WIDTH)); // calculate the skin index
-    let skinWeight = (x % SEGMENT_WIDTH) / SEGMENT_WIDTH; // calculate the skin weight
-
-    skinIndexes.push(skinIndex, skinIndex + 1, 0, 0); // set the skin indexes
-    skinWeights.push(1 - skinWeight, skinWeight, 0, 0); // set the skin weights
+    vertex.fromBufferAttribute(position, i);
+    const x = vertex.x;
+    const skinIndex = Math.max(0, Math.floor(x / SEGMENT_WIDTH));
+    let skinWeight = (x % SEGMENT_WIDTH) / SEGMENT_WIDTH;
+    skinIndexes.push(skinIndex, skinIndex + 1, 0, 0);
+    skinWeights.push(1 - skinWeight, skinWeight, 0, 0);
 }
 
 pageGeometry.setAttribute(
@@ -56,7 +53,6 @@ pageGeometry.setAttribute(
 );
 
 const whiteColor = new Color("white");
-// const emissiveColor = new Color("orange");
 
 const pageMaterials = [
     new MeshStandardMaterial({
@@ -73,26 +69,15 @@ const pageMaterials = [
     }),
 ];
 
-// pages.forEach((page) => {
-//     useTexture.preload(`/textures/${page.front}.jpg`);
-//     useTexture.preload(`/textures/${page.back}.jpg`);
-//     useTexture.preload(`/textures/book-cover-roughness.jpg`);
-//   });
-
-const Page = ({ number, pagecolor, page, opened, bookClosed, ...props }) => {
-    // const [picture, picture2, pictureRoughness] = useTexture([
-    //     `/textures/${front}.jpg`,
-    //     `/textures/${back}.jpg`,
-    //     ...(number === 0 || number === pages.length - 1
-    //       ? [`/textures/book-cover-roughness.jpg`]
-    //       : []),
-    //   ]);
-    //   picture.colorSpace = picture2.colorSpace = SRGBColorSpace;
+const Page = ({ number, pagecolor, page, opened, bookClosed, isActive, ...props }) => {
     const group = useRef();
     const turnedAt = useRef(0);
     const lastOpened = useRef(opened);
-
     const skinnedMeshRef = useRef();
+    const [showFront, setShowFront] = useState(true);
+    const zPosition = -number * PAGE_DEPTH + page * PAGE_DEPTH
+    const contentRef = useRef();
+
 
     const manualSkinnedMesh = useMemo(() => {
         const bones = [];
@@ -105,7 +90,7 @@ const Page = ({ number, pagecolor, page, opened, bookClosed, ...props }) => {
                 bone.position.x = SEGMENT_WIDTH;
             }
             if (i > 0) {
-                bones[i - 1].add(bone); // attach the new bone to the previous bone
+                bones[i - 1].add(bone);
             }
         }
         const skeleton = new Skeleton(bones);
@@ -113,29 +98,9 @@ const Page = ({ number, pagecolor, page, opened, bookClosed, ...props }) => {
         const materials = [...pageMaterials,
         new MeshStandardMaterial({
             color: pagecolor,
-            // map: picture,
-            // ...(number === 0
-            //     ? {
-            //         roughnessMap: pictureRoughness,
-            //     }
-            //     : {
-            //         roughness: 0.1,
-            //     }),
-            // emissive: emissiveColor,
-            // emissiveIntensity: 0,
         }),
         new MeshStandardMaterial({
             color: pagecolor,
-            // map: picture,
-            // ...(number === pages.length - 1
-            //     ? {
-            //         roughnessMap: pictureRoughness,
-            //     }
-            //     : {
-            //         roughness: 0.1,
-            //     }),
-            // emissive: emissiveColor,
-            // emissiveIntensity: 0,
         }),
         ];
         const mesh = new SkinnedMesh(pageGeometry, materials);
@@ -147,27 +112,10 @@ const Page = ({ number, pagecolor, page, opened, bookClosed, ...props }) => {
         return mesh;
     }, []);
 
-    // useHelper(skinnedMeshRef, SkeletonHelper, "red");
-
     useFrame((_, delta) => {
-        if (!skinnedMeshRef.current) {
-            return;
-        }
+        if (!skinnedMeshRef.current) return;
 
         const bones = skinnedMeshRef.current.skeleton.bones;
-
-        // bones[2].rotation.y = degToRad(40)
-        // bones[4].rotation.y = degToRad(-40)
-        // bones[4].rotation.x = degToRad(10)
-
-        // const emissiveIntensity = highlighted ? 0.22 : 0;
-        // skinnedMeshRef.current.material[4].emissiveIntensity =
-        //   skinnedMeshRef.current.material[5].emissiveIntensity = MathUtils.lerp(
-        //     skinnedMeshRef.current.material[4].emissiveIntensity,
-        //     emissiveIntensity,
-        //     0.1
-        //   );
-
         if (lastOpened.current !== opened) {
             turnedAt.current = +new Date();
             lastOpened.current = opened;
@@ -180,19 +128,8 @@ const Page = ({ number, pagecolor, page, opened, bookClosed, ...props }) => {
             targetRotation += degToRad(number * 0.8);
         }
 
-        // bones[0].rotation.y = targetRotation
-        // bones[0].rotation.y = MathUtils.lerp(bones[0].rotation.y, targetRotation, lerpFactor)
-        // easing.dampAngle(
-        //     bones[0].rotation,
-        //     "y",
-        //     targetRotation,
-        //     easingFactor,
-        //     delta
-        // )
-
         for (let i = 0; i < bones.length; i++) {
             const target = i === 0 ? group.current : bones[i];
-
             const insideCurveIntensity = i < 8 ? Math.sin(i * 0.2 + 0.25) : 0;
             const outsideCurveIntensity = i >= 8 ? Math.cos(i * 0.3 + 0.09) : 0;
             const turningIntensity = Math.sin(i * Math.PI * (1 / bones.length)) * turningTime;
@@ -213,7 +150,6 @@ const Page = ({ number, pagecolor, page, opened, bookClosed, ...props }) => {
             easing.dampAngle(
                 target.rotation,
                 "y",
-                // targetRotation,
                 rotationAngle,
                 easingFactor,
                 delta
@@ -231,42 +167,73 @@ const Page = ({ number, pagecolor, page, opened, bookClosed, ...props }) => {
                 delta
             );
         }
-    });
 
-    // const [_, setPage] = useAtom(pageAtom);
-    // const [highlighted, setHighlighted] = useState(false);
-    // useCursor(highlighted);
+
+        // const rotationY = group.current.rotation.y;
+        // setShowFront(rotationY > -Math.PI / 2 && rotationY < Math.PI / 2);
+
+        const quaternion = new Quaternion();
+        const euler = new Euler();
+        group.current.getWorldQuaternion(quaternion);
+        euler.setFromQuaternion(quaternion);
+
+        // Normalize rotation between -π and π
+        let normalizedRotation = ((euler.y + Math.PI) % (Math.PI * 2)) - Math.PI;
+        // setShowFront(normalizedRotation > -Math.PI / 2 && normalizedRotation < Math.PI / 2);
+        if (number == 0) {
+            setShowFront(normalizedRotation > -Math.PI / 2 && normalizedRotation < Math.PI / 2);
+        } else if (number % 2 === 0) {
+            setShowFront(normalizedRotation > 0);
+        } else {
+            setShowFront(normalizedRotation < 0);
+        }
+    });
 
     return (
         <group
             {...props}
             ref={group}
-        // onPointerEnter={(e) => {
-        //     e.stopPropagation();
-        //     setHighlighted(true);
-        // }}
-        // onPointerLeave={(e) => {
-        //     e.stopPropagation();
-        //     setHighlighted(false);
-        // }}
-        // onClick={(e) => {
-        //     e.stopPropagation();
-        //     setPage(opened ? number : number + 1);
-        //     setHighlighted(false);
-        // }}
+            position-z={zPosition}
         >
             <primitive
                 object={manualSkinnedMesh}
                 ref={skinnedMeshRef}
-                position-z={-number * PAGE_DEPTH + page * PAGE_DEPTH}
+                position-z={zPosition}
             />
-            <group
-                position={[PAGE_WIDTH / 2, 0, PAGE_DEPTH / 2 + 0.001]}
-            >
-                <Html>
-                    <div>Page {number}</div>
-                </Html>
-            </group>
+            {isActive && (
+                <>
+                    {/* Front Content */}
+                    <Html
+                        position={[PAGE_WIDTH / 2, 0, PAGE_DEPTH / 2 + 0.001]}
+                        rotation={[0, 0, 0]}
+                        transform
+                        style={{
+                            visibility: showFront ? 'visible' : 'hidden',
+                            pointerEvents: 'none',
+                            transition: 'visibility 0.2s'
+                        }}
+                    >
+                        <div className="page-content">
+                            {`Page ${number} front`}
+                        </div>
+                    </Html>
+                    {/* Back Content */}
+                    <Html
+                        position={[PAGE_WIDTH / 2, 0, -PAGE_DEPTH / 2 - 0.001]}
+                        rotation={[0, Math.PI, 0]}
+                        transform
+                        style={{
+                            visibility: !showFront ? 'visible' : 'hidden',
+                            pointerEvents: 'none',
+                            transition: 'visibility 0.2s'
+                        }}
+                    >
+                        <div className="page-content">
+                            {`Page ${number} back`}
+                        </div>
+                    </Html>
+                </>
+            )}
         </group>
     );
 };

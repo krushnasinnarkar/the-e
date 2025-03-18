@@ -18,7 +18,7 @@ export const pages = [
     },
     {
         component: "book-back",
-        pagecolor: "black"
+        pagecolor: "blue"
     },
 ];
 
